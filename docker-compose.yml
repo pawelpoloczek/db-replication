@@ -1,0 +1,33 @@
+version: '3.7'
+
+services:
+    mysql:
+        image: mysql:8.0.17
+        command: --default-authentication-plugin=mysql_native_password
+        ports:
+            - 3306:3306
+        restart: 'no'
+        environment:
+            MYSQL_ROOT_PASSWORD: pass123
+            MYSQL_DATABASE: app
+            MYSQL_USER: app
+            MYSQL_PASSWORD: pass123
+    app:
+        image: nginx:1.17.3-alpine
+        volumes:
+            - ./app/:/var/www/app/
+            - ./vhosts/:/etc/nginx/conf.d/
+        working_dir: /var/www/app/
+        ports:
+            - 80:80
+        depends_on:
+            - app-php
+        restart: 'no'
+    app-php:
+        build: ./php
+        working_dir: /var/www/app/
+        volumes:
+            - ./app/:/var/www/app/
+        depends_on:
+            - mysql
+        restart: 'no'
