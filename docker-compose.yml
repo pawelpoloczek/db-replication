@@ -1,6 +1,7 @@
 version: '3.7'
 
 services:
+
     mysql:
         image: mysql:8.0.17
         command: --default-authentication-plugin=mysql_native_password
@@ -12,18 +13,32 @@ services:
             MYSQL_DATABASE: app
             MYSQL_USER: app
             MYSQL_PASSWORD: pass123
-    app:
+
+    app1:
         image: nginx:1.17.3-alpine
         volumes:
             - ./app/:/var/www/app/
-            - ./vhosts/:/etc/nginx/conf.d/
+            - ./vhosts/app1.conf:/etc/nginx/conf.d/app1.conf
         working_dir: /var/www/app/
-        ports:
-            - 80:80
+#        ports:
+#            - 80:80
         depends_on:
-            - app-php
+            - app-php1
         restart: 'no'
-    app-php:
+
+    app2:
+        image: nginx:1.17.3-alpine
+        volumes:
+            - ./app/:/var/www/app/
+            - ./vhosts/app2.conf:/etc/nginx/conf.d/app2.conf
+        working_dir: /var/www/app/
+#        ports:
+#            - 80:80
+        depends_on:
+            - app-php2
+        restart: 'no'
+
+    app-php1:
         build: ./php
         working_dir: /var/www/app/
         volumes:
@@ -31,3 +46,25 @@ services:
         depends_on:
             - mysql
         restart: 'no'
+
+    app-php2:
+        build: ./php
+        working_dir: /var/www/app/
+        volumes:
+            - ./app/:/var/www/app/
+        depends_on:
+            - mysql
+        restart: 'no'
+
+    haproxy:
+        image: dockercloud/haproxy:1.6.7
+        ports:
+          - 80:80
+          - 443:443
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        depends_on:
+          - app1
+          - app2
+        environment:
+            - ADDITIONAL_SERVICES=db-replication:app1,db-replication:app2
