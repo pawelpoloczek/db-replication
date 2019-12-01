@@ -2,11 +2,29 @@ version: '3.7'
 
 services:
 
-    mysql:
+    mysql-master:
         image: mysql:8.0.17
         command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - ./database/master.cnf:/etc//mysql/conf.d/master.cnf
+            - ./database/dump/:/db-dump
         ports:
             - 3306:3306
+        restart: 'no'
+        environment:
+            MYSQL_ROOT_PASSWORD: pass123
+            MYSQL_DATABASE: app
+            MYSQL_USER: app
+            MYSQL_PASSWORD: pass123
+
+    mysql-slave:
+        image: mysql:8.0.17
+        command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - ./database/slave.cnf:/etc//mysql/conf.d/slave.cnf
+            - ./database/dump/:/db-dump
+        ports:
+            - 3307:3307
         restart: 'no'
         environment:
             MYSQL_ROOT_PASSWORD: pass123
@@ -20,8 +38,6 @@ services:
             - ./app/:/var/www/app/
             - ./vhosts/app1.conf:/etc/nginx/conf.d/app1.conf
         working_dir: /var/www/app/
-#        ports:
-#            - 80:80
         depends_on:
             - app-php1
         restart: 'no'
@@ -32,8 +48,6 @@ services:
             - ./app/:/var/www/app/
             - ./vhosts/app2.conf:/etc/nginx/conf.d/app2.conf
         working_dir: /var/www/app/
-#        ports:
-#            - 80:80
         depends_on:
             - app-php2
         restart: 'no'
@@ -44,7 +58,7 @@ services:
         volumes:
             - ./app/:/var/www/app/
         depends_on:
-            - mysql
+            - mysql-master
         restart: 'no'
 
     app-php2:
@@ -53,7 +67,7 @@ services:
         volumes:
             - ./app/:/var/www/app/
         depends_on:
-            - mysql
+            - mysql-master
         restart: 'no'
 
     haproxy:
